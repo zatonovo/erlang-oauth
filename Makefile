@@ -1,7 +1,7 @@
 all: clean compile
 
 clean:
-	@rm -rf ebin/*.beam
+	@rm -rf ebin/*.beam *.beam
 
 compile:
 	@test -d ebin || mkdir ebin
