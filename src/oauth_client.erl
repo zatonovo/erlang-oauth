@@ -8,6 +8,8 @@
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 
+-export([oauth_post_stream/6]).
+
 %%============================================================================
 %% API functions
 %%============================================================================
@@ -69,8 +71,22 @@ oauth_get(header, URL, Params, Consumer, Token, TokenSecret) ->
   {AuthorizationParams, QueryParams} = lists:partition(fun({K, _}) -> lists:prefix("oauth_", K) end, Signed),
   Request = {oauth:uri(URL, QueryParams), [oauth:header(AuthorizationParams)]},
   httpc:request(get, Request, [{autoredirect, false}], []);
+
 oauth_get(querystring, URL, Params, Consumer, Token, TokenSecret) ->
   oauth:get(URL, Params, Consumer, Token, TokenSecret).
+
+%% Params = [{K,V}]
+oauth_post_stream(Callback, URL, Params, Consumer, Token, TokenSecret) ->
+  Signed = oauth:sign("POST", URL, Params, Consumer, Token, TokenSecret),
+  {AuthorizationParams, QueryParams} = lists:partition(fun({K, _}) -> lists:prefix("oauth_", K) end, Signed),
+  Request = {oauth:uri(URL, QueryParams), [oauth:header(AuthorizationParams)]},
+  Options = [{pipeline_timeout, 90000}, {sync, false}, {stream, self}],
+  case catch httpc:request(post, Request, Options, []) of
+    {ok, RequestId} ->
+      Callback(RequestId);
+    {error, Reason} ->
+      {error, {http_error, Reason}}
+  end.
 
 %%============================================================================
 %% gen_server callbacks
