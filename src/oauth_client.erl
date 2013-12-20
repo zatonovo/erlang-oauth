@@ -80,8 +80,9 @@ oauth_post_stream(Callback, URL, Params, Consumer, Token, TokenSecret) ->
   Signed = oauth:sign("POST", URL, Params, Consumer, Token, TokenSecret),
   {AuthorizationParams, QueryParams} = lists:partition(fun({K, _}) -> lists:prefix("oauth_", K) end, Signed),
   Request = {oauth:uri(URL, QueryParams), [oauth:header(AuthorizationParams)]},
-  Options = [{pipeline_timeout, 90000}, {sync, false}, {stream, self}],
-  case catch httpc:request(post, Request, Options, []) of
+  HttpOptions = [{pipeline_timeout, 90000}],
+  Options = [{sync, false}, {stream, self}],
+  case catch httpc:request(post, Request, HttpOptions, Options) of
     {ok, RequestId} ->
       Callback(RequestId);
     {error, Reason} ->
